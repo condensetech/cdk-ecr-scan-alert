@@ -2,7 +2,7 @@
   "name": "cdk-ecr-scan-alert",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicola.racco/cdk-ecr-scan-alert.git"
+    "url": "git@github.com:condensetech/cdk-ecr-scan-alert.git"
   },
   "scripts": {
     "build": "npx projen build",
@@ -29,11 +29,14 @@
     "projen": "npx projen"
   },
   "author": {
-    "name": "Nicola Racco",
-    "email": "nicola.racco@gmail.com",
-    "organization": false
+    "name": "CoNDENSE.tech",
+    "email": "tech@condense.tech",
+    "organization": true
   },
   "devDependencies": {
+    "@aws-sdk/client-cloudformation": "3.998.0",
+    "@aws-sdk/client-ecr": "3.998.0",
+    "@aws-sdk/client-secrets-manager": "3.998.0",
     "@stylistic/eslint-plugin": "^2",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.3.1",
@@ -58,6 +61,9 @@
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
+    "@aws-sdk/client-cloudformation": "^3.998.0",
+    "@aws-sdk/client-ecr": "^3.998.0",
+    "@aws-sdk/client-secrets-manager": "^3.998.0",
     "aws-cdk-lib": "^2.189.1",
     "constructs": "^10.5.1"
   },

@@ -1,6 +1,21 @@
 {
   "dependencies": [
     {
+      "name": "@aws-sdk/client-cloudformation",
+      "version": "^3.998.0",
+      "type": "build"
+    },
+    {
+      "name": "@aws-sdk/client-ecr",
+      "version": "^3.998.0",
+      "type": "build"
+    },
+    {
+      "name": "@aws-sdk/client-secrets-manager",
+      "version": "^3.998.0",
+      "type": "build"
+    },
+    {
       "name": "@stylistic/eslint-plugin",
       "version": "^2",
       "type": "build"
@@ -88,6 +103,21 @@
     {
       "name": "typescript",
       "type": "build"
+    },
+    {
+      "name": "@aws-sdk/client-cloudformation",
+      "version": "^3.998.0",
+      "type": "peer"
+    },
+    {
+      "name": "@aws-sdk/client-ecr",
+      "version": "^3.998.0",
+      "type": "peer"
+    },
+    {
+      "name": "@aws-sdk/client-secrets-manager",
+      "version": "^3.998.0",
+      "type": "peer"
     },
     {
       "name": "aws-cdk-lib",
