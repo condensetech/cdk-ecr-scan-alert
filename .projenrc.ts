@@ -13,6 +13,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
   packageManager: javascript.NodePackageManager.PNPM,
   projenrcTs: true,
   repositoryUrl: 'https://github.com/nicola.racco/cdk-ecr-scan-alert.git',
+  npmTrustedPublishing: true,
   devDeps: [
     '@aws-sdk/client-cloudformation@^3.998.0',
     '@aws-sdk/client-ecr@^3.998.0',
