@@ -27,6 +27,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
 project.package.addField('pnpm', {
   onlyBuiltDependencies: [
     'esbuild',
+    'unrs-resolver',
   ],
 });
 project.addGitIgnore('.pnpm-store/');
