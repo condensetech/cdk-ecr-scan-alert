@@ -5,11 +5,25 @@ import {
 } from 'aws-cdk-lib';
 import type { IRepository } from 'aws-cdk-lib/aws-ecr';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as secrets from 'aws-cdk-lib/aws-secretsmanager';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as secrets from 'aws-cdk-lib/aws-secretsmanager';
 import { Provider } from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
+
+/**
+ * GitHub integration configuration for posting scan results.
+ */
+export interface EcrScanAlertGitHubProps {
+  /** GitHub owner (org or user). */
+  readonly owner: string;
+  /** GitHub repository name. */
+  readonly repo: string;
+  /** Name of Secrets Manager secret containing the GitHub token. */
+  readonly tokenSecretName: string;
+  /** If set, comment on this PR instead of creating an issue. */
+  readonly prNumber?: number;
+}
 
 export interface EcrScanAlertProps {
   /**
@@ -23,24 +37,9 @@ export interface EcrScanAlertProps {
   readonly repository: IRepository;
 
   /**
-   * GitHub owner (org or user).
+   * GitHub integration for posting scan results. When omitted, no GitHub alerts are posted.
    */
-  readonly githubOwner?: string;
-
-  /**
-   * GitHub repository name.
-   */
-  readonly githubRepo?: string;
-
-  /**
-   * Name of Secrets Manager secret containing the GitHub token.
-   */
-  readonly githubTokenSecretName?: string;
-
-  /**
-   * If set, comment on this PR instead of creating an issue.
-   */
-  readonly prNumber?: number;
+  readonly github?: EcrScanAlertGitHubProps;
 
   /**
    * Severities that cause failure. Comma-separated: CRITICAL, HIGH, MEDIUM, LOW, INFORMATIONAL, UNDEFINED.
@@ -66,7 +65,7 @@ export class EcrScanAlert extends Construct {
   constructor(scope: Construct, id: string, props: EcrScanAlertProps) {
     super(scope, id);
 
-    const handlerEntry = join(__dirname, 'ecr-scan-handler', 'index.ts');
+    const handlerEntry = join(__dirname, '..', 'lambda', 'ecr-scan-handler', 'index.ts');
 
     const onEventFn = new NodejsFunction(this, 'OnEvent', {
       entry: handlerEntry,
@@ -75,7 +74,7 @@ export class EcrScanAlert extends Construct {
       runtime: Runtime.NODEJS_22_X,
       bundling: {
         externalModules: ['@aws-sdk/client-cloudformation', '@aws-sdk/client-ecr', '@aws-sdk/client-secrets-manager'],
-      }
+      },
     });
 
     const isCompleteFn = new NodejsFunction(this, 'IsComplete', {
@@ -85,7 +84,7 @@ export class EcrScanAlert extends Construct {
       runtime: Runtime.NODEJS_22_X,
       bundling: {
         externalModules: ['@aws-sdk/client-cloudformation', '@aws-sdk/client-ecr', '@aws-sdk/client-secrets-manager'],
-      }
+      },
     });
 
     // ECR StartImageScan (onEvent starts the scan explicitly)
@@ -104,8 +103,8 @@ export class EcrScanAlert extends Construct {
       resources: ['*'],
     }));
 
-    if (props.githubTokenSecretName) {
-      const githubTokenSecret = secrets.Secret.fromSecretNameV2(this, 'GitHubTokenSecret', props.githubTokenSecretName);
+    if (props.github?.tokenSecretName) {
+      const githubTokenSecret = secrets.Secret.fromSecretNameV2(this, 'GitHubTokenSecret', props.github.tokenSecretName);
       githubTokenSecret.grantRead(isCompleteFn);
     }
 
@@ -125,10 +124,7 @@ export class EcrScanAlert extends Construct {
         severityThreshold: props.severityThreshold,
         suppressErrorOnRollback: String(props.suppressErrorOnRollback ?? true),
         blockDeployment: String(props.blockDeployment ?? true),
-        githubOwner: props.githubOwner,
-        githubRepo: props.githubRepo,
-        githubTokenSecretName: props.githubTokenSecretName,
-        prNumber: props.prNumber,
+        github: props.github,
       },
     });
   }

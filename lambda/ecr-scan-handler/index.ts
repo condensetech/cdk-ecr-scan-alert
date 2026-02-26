@@ -4,10 +4,10 @@
  * onEvent: Starts ECR image scan (Create/Update).
  * isComplete: Polls until scan completes, evaluates findings, optionally posts to GitHub.
  */
-import { parseImageUri } from './image-uri';
+import { isRollbackInProgress } from './cloudformation';
 import { startImageScan, getImageScanFindings } from './ecr';
 import { formatFindingsReport, formatScanSuccessReport, alertGitHub, updatePrCommentIfExists } from './github';
-import { isRollbackInProgress } from './cloudformation';
+import { parseImageUri } from './image-uri';
 import type { CdkEvent, EcrScanHandlerProps } from './types';
 
 export type { EcrScanHandlerProps } from './types';
@@ -88,13 +88,11 @@ export async function isComplete(event: CdkEvent) {
   }
 
   if (!hasBlockingFindings) {
-    if (props.githubOwner && props.githubRepo && props.githubTokenSecretName && props.prNumber != null) {
+    const g = props.github;
+    if (g?.owner && g?.repo && g?.tokenSecretName && g.prNumber != null) {
       try {
         const successBody = formatScanSuccessReport(props.imageUri);
-        await updatePrCommentIfExists(
-          { ...props, githubTokenSecretName: props.githubTokenSecretName },
-          successBody,
-        );
+        await updatePrCommentIfExists({ ...g, imageUri: props.imageUri }, successBody);
       } catch (e) {
         console.error('Failed to update PR comment with scan success:', e);
       }
@@ -110,12 +108,9 @@ export async function isComplete(event: CdkEvent) {
     response.imageScanFindings!,
   );
 
-  if (props.githubOwner && props.githubRepo && props.githubTokenSecretName) {
+  if (props.github?.owner && props.github?.repo && props.github?.tokenSecretName) {
     try {
-      await alertGitHub(
-        { ...props, githubTokenSecretName: props.githubTokenSecretName },
-        reportBody,
-      );
+      await alertGitHub({ ...props.github, imageUri: props.imageUri }, reportBody);
     } catch (e) {
       console.error('Failed to create GitHub alert:', e);
     }

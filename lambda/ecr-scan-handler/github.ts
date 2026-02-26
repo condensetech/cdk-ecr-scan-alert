@@ -1,6 +1,6 @@
-import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import type { ImageScanFindings } from '@aws-sdk/client-ecr';
-import type { EcrScanHandlerProps, FindingRow } from './types';
+import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
+import type { EcrScanHandlerGitHubProps, FindingRow } from './types';
 
 const secretsClient = new SecretsManagerClient();
 
@@ -146,30 +146,33 @@ No vulnerabilities found above the configured threshold.
 ${PR_COMMENT_MARKER}`;
 }
 
+/** GitHub params for alert functions (from props.github + imageUri). */
+export type GitHubAlertParams = EcrScanHandlerGitHubProps & { imageUri: string };
+
 /**
  * Update existing PR comment if one exists (from a previous failure). Used when scan passes.
  * Does nothing if no comment with our marker exists.
  */
 export async function updatePrCommentIfExists(
-  props: EcrScanHandlerProps & { githubTokenSecretName: string },
+  params: GitHubAlertParams,
   body: string,
 ): Promise<void> {
-  if (props.prNumber == null) return;
+  if (params.prNumber == null) return;
 
-  const token = await getGitHubToken(props.githubTokenSecretName);
+  const token = await getGitHubToken(params.tokenSecretName);
   const headers: Record<string, string> = {
-    Accept: 'application/vnd.github+json',
-    Authorization: `Bearer ${token}`,
+    'Accept': 'application/vnd.github+json',
+    'Authorization': `Bearer ${token}`,
     'X-GitHub-Api-Version': '2022-11-28',
     'Content-Type': 'application/json',
   };
-  const baseUrl = `https://api.github.com/repos/${props.githubOwner}/${props.githubRepo}`;
+  const baseUrl = `https://api.github.com/repos/${params.owner}/${params.repo}`;
   const bodyWithMarker = body.includes(PR_COMMENT_MARKER) ? body : `${body}\n${PR_COMMENT_MARKER}`;
 
-  const listRes = await fetch(`${baseUrl}/issues/${props.prNumber}/comments`, { headers });
+  const listRes = await fetch(`${baseUrl}/issues/${params.prNumber}/comments`, { headers });
   if (!listRes.ok) throw new Error(`GitHub API error (${listRes.status}): ${await listRes.text()}`);
 
-  const comments: Array<{ id: number; body?: string }> = await listRes.json();
+  const comments = (await listRes.json()) as Array<{ id: number; body?: string }>;
   const existing = comments.find(c => c.body?.includes(PR_COMMENT_MARKER));
 
   if (existing) {
@@ -179,7 +182,7 @@ export async function updatePrCommentIfExists(
       body: JSON.stringify({ body: bodyWithMarker }),
     });
     if (!patchRes.ok) throw new Error(`GitHub API error (${patchRes.status}): ${await patchRes.text()}`);
-    console.log(`Updated PR #${props.prNumber} comment: scan passed, no vulnerabilities`);
+    console.log(`Updated PR #${params.prNumber} comment: scan passed, no vulnerabilities`);
   }
 }
 
@@ -187,23 +190,23 @@ export async function updatePrCommentIfExists(
  * Post or update GitHub alert: PR comment (update existing if found) or new issue.
  */
 export async function alertGitHub(
-  props: EcrScanHandlerProps & { githubTokenSecretName: string },
+  params: GitHubAlertParams,
   body: string,
 ): Promise<void> {
-  const token = await getGitHubToken(props.githubTokenSecretName);
+  const token = await getGitHubToken(params.tokenSecretName);
   const headers: Record<string, string> = {
-    Accept: 'application/vnd.github+json',
-    Authorization: `Bearer ${token}`,
+    'Accept': 'application/vnd.github+json',
+    'Authorization': `Bearer ${token}`,
     'X-GitHub-Api-Version': '2022-11-28',
     'Content-Type': 'application/json',
   };
-  const baseUrl = `https://api.github.com/repos/${props.githubOwner}/${props.githubRepo}`;
+  const baseUrl = `https://api.github.com/repos/${params.owner}/${params.repo}`;
   const bodyWithMarker = body.includes(PR_COMMENT_MARKER) ? body : `${body}\n${PR_COMMENT_MARKER}`;
 
-  if (props.prNumber != null) {
-    await postOrUpdatePrComment(baseUrl, props.prNumber, bodyWithMarker, headers);
+  if (params.prNumber != null) {
+    await postOrUpdatePrComment(baseUrl, params.prNumber, bodyWithMarker, headers);
   } else {
-    await createIssue(baseUrl, props.imageUri, body, headers);
+    await createIssue(baseUrl, params.imageUri, body, headers);
   }
 }
 
@@ -216,7 +219,7 @@ async function postOrUpdatePrComment(
   const listRes = await fetch(`${baseUrl}/issues/${prNumber}/comments`, { headers });
   if (!listRes.ok) throw new Error(`GitHub API error (${listRes.status}): ${await listRes.text()}`);
 
-  const comments: Array<{ id: number; body?: string }> = await listRes.json();
+  const comments = (await listRes.json()) as Array<{ id: number; body?: string }>;
   const existing = comments.find(c => c.body?.includes(PR_COMMENT_MARKER));
 
   if (existing) {

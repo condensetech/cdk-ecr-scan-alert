@@ -44,6 +44,11 @@
       "type": "build"
     },
     {
+      "name": "esbuild",
+      "version": "^0.27.3",
+      "type": "build"
+    },
+    {
       "name": "eslint-import-resolver-typescript",
       "type": "build"
     },
@@ -103,21 +108,6 @@
     {
       "name": "typescript",
       "type": "build"
-    },
-    {
-      "name": "@aws-sdk/client-cloudformation",
-      "version": "^3.998.0",
-      "type": "peer"
-    },
-    {
-      "name": "@aws-sdk/client-ecr",
-      "version": "^3.998.0",
-      "type": "peer"
-    },
-    {
-      "name": "@aws-sdk/client-secrets-manager",
-      "version": "^3.998.0",
-      "type": "peer"
     },
     {
       "name": "aws-cdk-lib",

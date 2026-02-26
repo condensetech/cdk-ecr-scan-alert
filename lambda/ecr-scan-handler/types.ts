@@ -1,7 +1,15 @@
 import type { ImageScanFindings } from '@aws-sdk/client-ecr';
 
+/** GitHub config passed from the construct (nested in ResourceProperties). */
+export interface EcrScanHandlerGitHubProps {
+  owner: string;
+  repo: string;
+  tokenSecretName: string;
+  prNumber?: number;
+}
+
 /**
- * Custom resource properties passed from EcrScanOnPushCheck construct.
+ * Custom resource properties passed from EcrScanAlert construct.
  */
 export interface EcrScanHandlerProps {
   addr: string;
@@ -12,10 +20,8 @@ export interface EcrScanHandlerProps {
   suppressErrorOnRollback: string;
   /** When 'true', deployment fails on findings. When 'false', deployment proceeds but GH comments are still posted. */
   blockDeployment?: string;
-  githubOwner?: string;
-  githubRepo?: string;
-  githubTokenSecretName?: string;
-  prNumber?: number;
+  /** GitHub integration (owner, repo, tokenSecretName, optional prNumber) */
+  github?: EcrScanHandlerGitHubProps;
 }
 
 /** CloudFormation custom resource event payload. */
