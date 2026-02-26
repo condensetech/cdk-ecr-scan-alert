@@ -30,6 +30,9 @@ project.package.addField('pnpm', {
     'unrs-resolver',
   ],
 });
+project.package.addField('publishConfig', {
+  access: 'public',
+});
 project.addGitIgnore('.pnpm-store/');
 // Include lambda/ in published package
 project.addPackageIgnore('!/lambda/');
